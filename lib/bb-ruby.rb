@@ -320,6 +320,54 @@ module BBRuby
       tag_list.map{|k,v| v[0]}.any?{|regex| text.match(regex) }
     end
 
+    def html_to_bbcode(html_content)
+      bbcode_content = ''
+      ## Iterate over lines
+      html_content.delete("\n\r\t").split(/<br *\/?>/i).each do |line|
+        styles = { strong: :b, b: :b,
+                   em: :i, i: :i,
+                   ins: :u, u: :u,
+                   strike: :s, del: :del, s: :s,
+                   center: :center,
+                   code: :code,
+                   ol: :ol, ul: :ul }
+
+        ## preserve B, I, U
+        styles.each do |html,code|
+            line.gsub!(/<#{html}>/i, "[#{code.upcase}]")
+            line.gsub!(/<\/#{html}>/i, "[/#{code.upcase}]")
+        end
+
+        ## EMAIL
+        line.gsub!(/<a +href *= *\"mailto:(.*?)\".*?>.*?<\/a>/i, '[EMAIL]\\1[/EMAIL]')
+
+        ## URL
+        line.gsub!(/<a +href *= *\"((?:https?|ftp):\/\/.*?)\".*?>(.*?)<\/a>/i, '[URL=\\1]\\2[/URL]')
+
+        ## Other refs + closing tags => throw away
+        line.gsub!(/<a +href *= *\".*?\".*?>/i, '')
+        line.gsub!(/<\/a>/i, '')
+
+        ## IMG
+        # line.gsub!(/<img +src *= *\"(.*?)\".*?\/?>/i, '[IMG=\\1]')
+        line.gsub!(/<img +src *= *\"(.*?)\".*?\/?>/i, '[IMG]\\1[/IMG]')
+
+        ## QUOTE
+        line.gsub!(/<(?:xmp|pre)>/i,   '[QUOTE]')
+        line.gsub!(/<\/(?:xmp|pre)>/i, '[/QUOTE]')
+
+        ## LIST
+        line.gsub!(/<li *\/?> */i, "[*] ")
+
+        ## Unkown tags => throw away
+        line.gsub!(/<.*? *\/?>/, '')
+
+        bbcode_content << sprintf("%s\n", line)
+      end
+
+      bbcode_content.strip
+    end
+
     private
 
     def process_tags(text, tags_alternative_definition={}, escape_html=true, method=:disable, *tags)
@@ -438,6 +486,10 @@ class String
   # Replace the string contents with the HTML-converted markup using simple_format
   def bbcode_to_html_with_formatting!(tags_alternative_definition = {}, escape_html=true, method=:disable, *tags)
     self.replace(BBRuby.to_html_with_formatting(self, tags_alternative_definition, escape_html, method, *tags))
+  end
+
+  def html_to_bbcode
+    self.replace(BBRuby.html_to_bbcode(self))
   end
 
   def bbcode_formatted?
