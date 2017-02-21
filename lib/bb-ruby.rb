@@ -413,11 +413,13 @@ module BBRuby
     end
 
     # extracted from Rails ActionPack
-    def simple_format( text )
+    def simple_format(text)
       start_tag = '<p>'
       text = text.to_s.dup
-      text.gsub!(/\r\n?/, "\n")                     # \r\n and \r => \n
-      text.gsub!(/\n+/, "</p>\n#{start_tag}")  # 2+ newline  => paragraph
+      text.gsub!(/\r\n?/, "\n")              # \r\n and \r => \n
+      text.gsub!(/(\n\s?)+/, "\n")           # \n\n\n => \n
+      text.gsub!(/&nbsp;/, " ")              # &nbsp; => space
+      text.gsub!(/\n+/, "</p>#{start_tag}")  # 2+ newline  => paragraph
       #text.gsub!(/([^\n]\n)(?=[^\n])/, '\1<br />')  # 1 newline   => br
       text.insert 0, start_tag
       text << '</p>'
